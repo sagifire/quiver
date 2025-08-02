@@ -1,0 +1,53 @@
+{
+  "name": "@sagifire/quiver",
+  "version": "1.0.0",
+  "description": "A simple and high-performance library for developing web applications",
+  "keywords": [
+    "web",
+    "http",
+    "rest",
+    "restful",
+    "router",
+    "app",
+    "api"
+  ],
+  "homepage": "https://github.com/sagifire/quiver#readme",
+  "bugs": {
+    "url": "https://github.com/sagifire/quiver/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sagifire/quiver.git"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",      
+      "import": "./dist/es/index.js",
+      "require": "./dist/cjs/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "license": "MIT",
+  "author": "sagifire <achvyl@gmail.com>",
+  "type": "commonjs",
+  "module": "dist/es/index.js",
+  "main": "dist/cjs/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "test": "vitest"
+  },
+  "devDependencies": {
+    "@types/node": "^24.1.0",
+    "typescript": "^5.9.2",
+    "vite": "^7.0.6",
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "^3.2.4"
+  }
+}

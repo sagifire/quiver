@@ -1,5 +1,6 @@
 // PatternRouteType.ts
 import { IRouteType, Handler, RequestContext, RouteRuleBase, Pipe } from '../core/http.js'
+import { compose } from '../core/compose.js'
 
 export type Method = 'GET'|'HEAD'|'POST'|'PUT'|'PATCH'|'DELETE'|'OPTIONS'
 
@@ -99,18 +100,6 @@ function parsePattern(pattern: string, constraints?: PatternRule['constraints'])
     return tokens
 }
 
-function compose<Ctx extends RequestContext>(pipes: readonly Pipe<Ctx>[]|undefined, handler: Handler<Ctx>) {
-    if (!pipes || pipes.length === 0) {
-        return handler
-    }
-    return async (ctx: Ctx) => {
-        for (const pipe of pipes) {
-            await pipe(ctx)
-        }
-        return handler(ctx)
-    }
-}
-
 type Exec<Ctx extends RequestContext> = Handler<Ctx>
 
 class Node<Ctx extends RequestContext> {
@@ -132,9 +121,7 @@ class Node<Ctx extends RequestContext> {
     }
 
     setParam(name: string, validate?: Validator) {
-        if (this.wChild) {
-            throw new Error('Cannot add param at same level after wildcard')
-        }
+        // Обмеження на додавання param після wildcard видалено, оскільки пріоритет визначається під час матчингу.
         if (!this.pChild) {
             this.pChild = { name, validate, node: new Node<Ctx>() }
         }
@@ -207,8 +194,23 @@ export class PatternRouteType<Ctx extends RequestContext = RequestContext>
         const method = (ctx.req.method as Method) || 'GET'
 
         if (pathname === '/') {
-            const h = this.root.getHandler(method)
-            return h ? (c: Ctx) => h(c) : null
+            // Спочатку перевіряємо статичний обробник для кореневого шляху
+            let h = this.root.getHandler(method)
+            if (h) {
+                return h
+            }
+            // Якщо статичного обробника немає, перевіряємо wildcard для кореневого шляху (наприклад, /*path)
+            if (this.root.wChild) {
+                h = this.root.wChild.node.getHandler(method)
+                if (h) {
+                    // Для кореневого шляху параметр wildcard має бути порожнім рядком
+                    return (c: Ctx) => {
+                        (c as any).params = { [this.root.wChild!.name]: '' }
+                        return h!(c)
+                    }
+                }
+            }
+            return null
         }
 
         const parts = pathname.slice(1).split('/')

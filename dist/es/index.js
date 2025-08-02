@@ -1,11 +1,11 @@
 import { promises as w, createReadStream as v } from "node:fs";
 import C, { extname as S } from "node:path";
-class x extends Error {
-  constructor(t, e = "Http Error", s = t < 500, a = {}) {
-    super(e), this.statusCode = t, this.expose = s, this.headers = a;
+class b extends Error {
+  constructor(t, e = "Http Error", s = t < 500, h = {}) {
+    super(e), this.statusCode = t, this.expose = s, this.headers = h;
   }
 }
-class H {
+class P {
   constructor(t, e) {
     this.req = t, this.res = e;
   }
@@ -35,17 +35,17 @@ class H {
   // Request body with limit and abort-safe
   async bodyRaw(t = this.limits.bodySize) {
     return new Promise((e, s) => {
-      const a = [];
+      const h = [];
       let r = 0, i = !1;
-      const o = (h) => {
-        i || (i = !0, this.req.destroy(), s(h));
-      }, l = () => {
-        i || (i = !0, e(Buffer.concat(a)));
+      const a = (l) => {
+        i || (i = !0, this.req.destroy(), s(l));
+      }, o = () => {
+        i || (i = !0, e(Buffer.concat(h)));
       };
-      this.req.once("error", o), this.req.once("aborted", () => o(new x(499, "Client Closed Request", !0))), this.req.on("data", (h) => {
-        if (r += h.length, r > t) return o(new x(413, "Content Too Large", !0));
-        a.push(h);
-      }), this.req.once("end", l);
+      this.req.once("error", a), this.req.once("aborted", () => a(new b(499, "Client Closed Request", !0))), this.req.on("data", (l) => {
+        if (r += l.length, r > t) return a(new b(413, "Content Too Large", !0));
+        h.push(l);
+      }), this.req.once("end", o);
     });
   }
   async bodyJson(t) {
@@ -53,7 +53,7 @@ class H {
     try {
       return JSON.parse(e.toString("utf8"));
     } catch {
-      throw new x(400, "Invalid JSON", !0);
+      throw new b(400, "Invalid JSON", !0);
     }
   }
 }
@@ -74,37 +74,37 @@ class F {
   addRule(t) {
     const e = this.reg[t.type];
     if (!e) throw new Error(`Route type "${t.type}" is not registered`);
-    const { type: s, ...a } = t;
-    return e.addRule(a), this;
+    const { type: s, ...h } = t;
+    return e.addRule(h), this;
   }
   addRules(t) {
     for (const e of t) this.addRule(e);
     return this;
   }
   makeCtx(t, e) {
-    return this.ctxFactory?.factory ? this.ctxFactory.factory(t, e) : this.ctxFactory?.class ? new this.ctxFactory.class(t, e) : new H(t, e);
+    return this.ctxFactory?.factory ? this.ctxFactory.factory(t, e) : this.ctxFactory?.class ? new this.ctxFactory.class(t, e) : new P(t, e);
   }
   // Main server request handler
   async handler(t, e) {
-    const s = this.makeCtx(t, e), a = "http://" + (t.headers.host || "localhost");
-    s.url = new URL(t.url || "/", a);
+    const s = this.makeCtx(t, e), h = "http://" + (t.headers.host || "localhost");
+    s.url = new URL(t.url || "/", h);
     try {
       for (const r of this.globalPipes)
         await r(s);
       for (const r of this.order) {
-        const o = this.reg[r].match(s);
-        if (o)
-          return await o(s);
+        const a = this.reg[r].match(s);
+        if (a)
+          return await a(s);
       }
       e.statusCode = 404, e.setHeader("Content-Type", "application/json; charset=utf-8"), e.end(JSON.stringify({ error: "Not Found" }));
     } catch (r) {
       const i = r?.statusCode ?? 500;
-      if (e.statusCode = i, r?.headers) for (const [o, l] of Object.entries(r.headers)) e.setHeader(o, String(l));
+      if (e.statusCode = i, r?.headers) for (const [a, o] of Object.entries(r.headers)) e.setHeader(a, String(o));
       e.setHeader("Content-Type", "application/json; charset=utf-8"), e.end(JSON.stringify({ error: r?.expose ? r.message : "Internal Server Error" }));
     }
   }
 }
-class M {
+class L {
   constructor(t) {
     this.opts = t, this.root = C.resolve(t.rootDir), this.base = t.urlBase.endsWith("/") ? t.urlBase.slice(0, -1) : t.urlBase;
   }
@@ -123,24 +123,24 @@ class M {
   }
   // O(#files). Для великих дерев — інкрементал або шардінг по підкаталогах
   async rebuild() {
-    const t = /* @__PURE__ */ new Map(), e = /* @__PURE__ */ new Set(), s = await w.realpath(this.root).catch(() => this.root), a = (i) => i === s || i.startsWith(s + C.sep), r = async (i, o, l = 0) => {
-      if (this.opts.maxDepth && l > this.opts.maxDepth)
+    const t = /* @__PURE__ */ new Map(), e = /* @__PURE__ */ new Set(), s = await w.realpath(this.root).catch(() => this.root), h = (i) => i === s || i.startsWith(s + C.sep), r = async (i, a, o = 0) => {
+      if (this.opts.maxDepth && o > this.opts.maxDepth)
         return;
-      let h;
+      let l;
       try {
-        h = await w.readdir(i, { withFileTypes: !0 });
-      } catch (p) {
-        this.opts.logger?.warn?.(`readdir failed: ${i}`, p);
+        l = await w.readdir(i, { withFileTypes: !0 });
+      } catch (m) {
+        this.opts.logger?.warn?.(`readdir failed: ${i}`, m);
         return;
       }
-      let m = await w.realpath(i).catch(() => i);
-      if (a(m) && !e.has(m)) {
-        e.add(m);
-        for (const p of h) {
-          const d = p.name;
-          if (d.startsWith(".") && !(this.opts.allowWellKnown && d === ".well-known"))
+      let p = await w.realpath(i).catch(() => i);
+      if (h(p) && !e.has(p)) {
+        e.add(p);
+        for (const m of l) {
+          const u = m.name;
+          if (u.startsWith(".") && !(this.opts.allowWellKnown && u === ".well-known"))
             continue;
-          const c = C.join(i, d), u = o ? o + "/" + d : d;
+          const c = C.join(i, u), d = a ? a + "/" + u : u;
           let f;
           try {
             f = await w.lstat(c);
@@ -157,27 +157,27 @@ class M {
               this.opts.logger?.debug?.(`realpath failed: ${c}`, y);
               continue;
             }
-            if (!a(g))
+            if (!h(g))
               continue;
-            let b;
+            let E;
             try {
-              b = await w.stat(c);
+              E = await w.stat(c);
             } catch (y) {
               this.opts.logger?.debug?.(`stat failed: ${c}`, y);
               continue;
             }
-            if (b.isDirectory())
-              await r(c, u, l + 1);
-            else if (b.isFile()) {
-              const y = `${this.base}/${u.split(C.sep).join("/")}`;
+            if (E.isDirectory())
+              await r(c, d, o + 1);
+            else if (E.isFile()) {
+              const y = `${this.base}/${d.split(C.sep).join("/")}`;
               t.set(y, c);
             }
             continue;
           }
           if (f.isDirectory())
-            await r(c, u, l + 1);
+            await r(c, d, o + 1);
           else if (f.isFile()) {
-            const g = `${this.base}/${u.split(C.sep).join("/")}`;
+            const g = `${this.base}/${d.split(C.sep).join("/")}`;
             t.set(g, c);
           }
         }
@@ -197,46 +197,84 @@ class M {
       return s;
   }
 }
-function P(n, t) {
+function k(n, t) {
   return !n || n.length === 0 ? t : async (e) => {
     for (const s of n)
       await s(e);
     return t(e);
   };
 }
+function $(n) {
+  return !n || n === "/" ? "/" : n.endsWith("/") ? n.slice(0, -1) : n;
+}
+const O = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"];
 class q {
   typeName = "PATH";
+  // Бінарний пошук по "METHOD␠PATH"
   keys = [];
-  // "GET /health"   (upper method)
   execs = [];
+  // Для 405: індекс шлях → множина дозволених методів
+  pathMethods = /* @__PURE__ */ new Map();
   addRule(t) {
-    const e = t.methods?.length ? t.methods : ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], s = P(t.pipes, t.handler);
-    for (const a of e) {
-      const r = `${a} ${t.path}`;
-      let i = this.lowerBound(this.keys, r);
-      this.keys.splice(i, 0, r), this.execs.splice(i, 0, s);
+    const e = $(t.path), s = (t.methods?.length ? t.methods : ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]).map((i) => i.toUpperCase()), h = k(t.pipes, t.handler);
+    for (const i of s) {
+      const a = `${i} ${e}`, o = this.lowerBound(this.keys, a);
+      this.keys.splice(o, 0, a), this.execs.splice(o, 0, h);
     }
+    let r = this.pathMethods.get(e);
+    r || (r = /* @__PURE__ */ new Set(), this.pathMethods.set(e, r));
+    for (const i of s)
+      r.add(i);
   }
   match(t) {
-    const s = `${(t.req.method || "GET").toUpperCase()} ${t.url.pathname.replace(/\/$/, "") || "/"}`, a = this.lowerBound(this.keys, s);
-    return a < this.keys.length && this.keys[a] === s ? this.execs[a] : null;
+    const e = (t.req.method || "GET").toUpperCase(), s = $(t.url.pathname), h = `${e} ${s}`;
+    let r = this.lowerBound(this.keys, h);
+    if (r < this.keys.length && this.keys[r] === h)
+      return this.execs[r];
+    if (e === "HEAD") {
+      const a = `GET ${s}`;
+      if (r = this.lowerBound(this.keys, a), r < this.keys.length && this.keys[r] === a) {
+        const o = this.execs[r];
+        return async (l) => {
+          const p = l.res.end;
+          l.res.end = (m) => l.res, await o(l), l.res.end = p, l.res.statusCode = l.res.statusCode === 200 ? 200 : l.res.statusCode, l.res.end();
+        };
+      }
+    }
+    const i = this.pathMethods.get(s);
+    if (i && i.size > 0) {
+      const a = new Set(i);
+      i.has("GET") && a.add("HEAD");
+      const o = O.filter((p) => a.has(p)), l = o.length ? o.join(", ") : Array.from(a).join(", ");
+      return () => {
+        throw new b(405, "Method Not Allowed", !0, { Allow: l });
+      };
+    }
+    return null;
   }
   lowerBound(t, e) {
-    let s = 0, a = t.length;
-    for (; s < a; ) {
-      const r = s + a >>> 1;
-      t[r] < e ? s = r + 1 : a = r;
+    let s = 0, h = t.length;
+    for (; s < h; ) {
+      const r = s + h >>> 1;
+      t[r] < e ? s = r + 1 : h = r;
     }
     return s;
   }
 }
-const k = {
+function j(n, t) {
+  return !n || n.length === 0 ? t : async (e) => {
+    for (const s of n)
+      await s(e);
+    return t(e);
+  };
+}
+const A = {
   int: (n) => /^-?\d+$/.test(n),
   uuid: (n) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(n),
   hex: (n) => /^[0-9a-f]+$/i.test(n),
   alpha: (n) => /^[A-Za-z]+$/.test(n)
 };
-function $(n) {
+function R(n) {
   if (n) {
     if (typeof n == "function")
       return n;
@@ -244,54 +282,47 @@ function $(n) {
       const t = n;
       return (e) => t.test(e);
     }
-    return k[n];
+    return A[n];
   }
 }
-function R(n) {
+function x(n) {
   return !n || n === "/" ? "/" : n.endsWith("/") ? n.slice(0, -1) : n;
 }
-function E(n) {
+function H(n) {
   try {
     return decodeURIComponent(n);
   } catch {
     return null;
   }
 }
-function j(n, t) {
-  const e = R(n);
+function D(n, t) {
+  const e = x(n);
   if (e === "/")
     return [];
-  const s = e.slice(1).split("/"), a = [];
+  const s = e.slice(1).split("/"), h = [];
   for (let r = 0; r < s.length; r++) {
     const i = s[r];
     if (i.startsWith(":")) {
-      const o = /^:([A-Za-z_][A-Za-z0-9_]*)(?:\((.+)\))?$/.exec(i);
-      if (!o)
+      const a = /^:([A-Za-z_][A-Za-z0-9_]*)(?:\((.+)\))?$/.exec(i);
+      if (!a)
         throw new Error(`Invalid param segment: ${i}`);
-      const l = o[1];
-      if (!l)
+      const o = a[1];
+      if (!o)
         throw new Error(`Invalid param name in segment: ${i}`);
-      let h;
-      o[2] ? h = $(new RegExp(`^(?:${o[2]})$`)) : t && t[l] && (h = $(t[l])), a.push({ t: "param", name: l, validate: h });
+      let l;
+      a[2] ? l = R(new RegExp(`^(?:${a[2]})$`)) : t && t[o] && (l = R(t[o])), h.push({ t: "param", name: o, validate: l });
       continue;
     }
     if (i === "*" || i.startsWith("*")) {
-      const o = i === "*" ? "wild" : i.slice(1);
+      const a = i === "*" ? "wild" : i.slice(1);
       if (r !== s.length - 1)
         throw new Error("Wildcard must be the last segment");
-      a.push({ t: "wildcard", name: o });
+      h.push({ t: "wildcard", name: a });
       continue;
     }
-    a.push({ t: "static", val: i });
+    h.push({ t: "static", val: i });
   }
-  return a;
-}
-function O(n, t) {
-  return !n || n.length === 0 ? t : async (e) => {
-    for (const s of n)
-      await s(e);
-    return t(e);
-  };
+  return h;
 }
 class T {
   sChildren = null;
@@ -304,8 +335,6 @@ class T {
     return e || (e = new T(), this.sChildren.set(t, e)), e;
   }
   setParam(t, e) {
-    if (this.wChild)
-      throw new Error("Cannot add param at same level after wildcard");
     return this.pChild || (this.pChild = { name: t, validate: e, node: new T() }), this.pChild.node;
   }
   setWildcard(t) {
@@ -323,78 +352,78 @@ class T {
     return this.handlers ? (this.handlers.get(t) || (t === "HEAD" ? this.handlers.get("GET") : void 0)) ?? null : null;
   }
 }
-class z {
+class B {
   typeName = "PATH_PATTERN";
   root = new T();
   addRule(t) {
-    const e = t.methods?.length ? t.methods : ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], s = j(t.pattern, t.constraints), a = O(t.pipes, t.handler);
+    const e = t.methods?.length ? t.methods : ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], s = D(t.pattern, t.constraints), h = j(t.pipes, t.handler);
     let r = this.root;
     for (let i = 0; i < s.length; i++) {
-      const o = s[i];
-      if (o.t === "static")
-        r = r.getOrAddStatic(o.val);
-      else if (o.t === "param")
-        r = r.setParam(o.name, o.validate);
-      else if (r = r.setWildcard(o.name), i !== s.length - 1)
+      const a = s[i];
+      if (a.t === "static")
+        r = r.getOrAddStatic(a.val);
+      else if (a.t === "param")
+        r = r.setParam(a.name, a.validate);
+      else if (r = r.setWildcard(a.name), i !== s.length - 1)
         throw new Error("Wildcard must be the last segment");
     }
-    r.setHandler(e, a);
+    r.setHandler(e, h);
   }
   match(t) {
-    const e = R(t.url.pathname), s = t.req.method || "GET";
+    const e = x(t.url.pathname), s = t.req.method || "GET";
     if (e === "/") {
-      const l = this.root.getHandler(s);
-      return l ? (h) => l(h) : null;
+      let o = this.root.getHandler(s);
+      return o || (this.root.wChild && (o = this.root.wChild.node.getHandler(s), o) ? (l) => (l.params = { [this.root.wChild.name]: "" }, o(l)) : null);
     }
-    const a = e.slice(1).split("/");
+    const h = e.slice(1).split("/");
     let r = null;
-    const i = (l, h) => {
-      if (h === a.length)
-        return l.getHandler(s);
-      const m = a[h];
-      if (m === void 0)
+    const i = (o, l) => {
+      if (l === h.length)
+        return o.getHandler(s);
+      const p = h[l];
+      if (p === void 0)
         return null;
-      const p = E(m);
-      if (p === null)
+      const m = H(p);
+      if (m === null)
         return null;
-      if (l.sChildren) {
-        const d = l.sChildren.get(p);
-        if (d) {
-          const c = i(d, h + 1);
+      if (o.sChildren) {
+        const u = o.sChildren.get(m);
+        if (u) {
+          const c = i(u, l + 1);
           if (c)
             return c;
         }
       }
-      if (l.pChild) {
-        const { name: d, validate: c, node: u } = l.pChild;
-        if (!c || c(p)) {
-          r || (r = /* @__PURE__ */ Object.create(null)), r[d] = p;
-          const f = i(u, h + 1);
+      if (o.pChild) {
+        const { name: u, validate: c, node: d } = o.pChild;
+        if (!c || c(m)) {
+          r || (r = /* @__PURE__ */ Object.create(null)), r[u] = m;
+          const f = i(d, l + 1);
           if (f)
             return f;
-          delete r[d];
+          delete r[u];
         }
       }
-      if (l.wChild) {
-        let d = "";
-        for (let u = h; u < a.length; u++) {
-          const f = E(a[u]);
+      if (o.wChild) {
+        let u = "";
+        for (let d = l; d < h.length; d++) {
+          const f = H(h[d]);
           if (f === null)
             return null;
-          d += (u === h ? "" : "/") + f;
+          u += (d === l ? "" : "/") + f;
         }
-        r || (r = /* @__PURE__ */ Object.create(null)), r[l.wChild.name] = d;
-        const c = l.wChild.node.getHandler(s);
+        r || (r = /* @__PURE__ */ Object.create(null)), r[o.wChild.name] = u;
+        const c = o.wChild.node.getHandler(s);
         if (c)
           return c;
-        delete r[l.wChild.name];
+        delete r[o.wChild.name];
       }
       return null;
-    }, o = i(this.root, 0);
-    return o ? (l) => (r && (l.params = r), o(l)) : null;
+    }, a = i(this.root, 0);
+    return a ? (o) => (r && (o.params = r), a(o)) : null;
   }
 }
-const N = {
+const M = {
   ".html": "text/html; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".txt": "text/plain; charset=utf-8",
@@ -411,22 +440,22 @@ const N = {
   ".mp3": "audio/mpeg",
   ".wav": "audio/wav"
 };
-function A(n) {
+function N(n) {
   if (!n)
     return {};
   const t = {};
   for (const [e, s] of Object.entries(n)) {
-    const a = e.startsWith(".") ? e.toLowerCase() : "." + e.toLowerCase();
-    t[a] = s;
+    const h = e.startsWith(".") ? e.toLowerCase() : "." + e.toLowerCase();
+    t[h] = s;
   }
   return t;
 }
 function W(n, t) {
   return t && (/^text\//.test(n) || /^application\/json\b/.test(n)) && !/;\s*charset=/i.test(n) ? `${n}; charset=${t}` : n;
 }
-class L {
+class G {
   constructor(t) {
-    this.cfg = t, this.resolveCT = t.resolveContentType, this.ct = { ...N, ...A(t.contentTypes) }, this.defaultCT = t.defaultContentType ?? "application/octet-stream", this.defaultTextCharset = t.defaultTextCharset ?? "utf-8";
+    this.cfg = t, this.resolveCT = t.resolveContentType, this.ct = { ...M, ...N(t.contentTypes) }, this.defaultCT = t.defaultContentType ?? "application/octet-stream", this.defaultTextCharset = t.defaultTextCharset ?? "utf-8";
   }
   typeName = "STATIC";
   ct;
@@ -440,25 +469,25 @@ class L {
       return null;
     const e = this.cfg.index.resolveUrl(t.url);
     return e ? async (s) => {
-      const a = await w.stat(e), r = a.size, i = s.req.method === "HEAD", o = S(e).toLowerCase(), l = this.resolveCT?.(o, e, a, s) ?? this.ct[o] ?? this.defaultCT;
-      s.header("X-Content-Type-Options", "nosniff"), s.header("Accept-Ranges", "bytes"), s.header("Last-Modified", a.mtime.toUTCString()), s.header("Content-Type", W(l, this.defaultTextCharset));
-      const h = `W/"${r}-${Math.trunc(a.mtimeMs)}"`;
-      if (s.header("ETag", h), s.req.headers["if-none-match"] === h) {
+      const h = await w.stat(e), r = h.size, i = s.req.method === "HEAD", a = S(e).toLowerCase(), o = this.resolveCT?.(a, e, h, s) ?? this.ct[a] ?? this.defaultCT;
+      s.header("X-Content-Type-Options", "nosniff"), s.header("Accept-Ranges", "bytes"), s.header("Last-Modified", h.mtime.toUTCString()), s.header("Content-Type", W(o, this.defaultTextCharset));
+      const l = `W/"${r}-${Math.trunc(h.mtimeMs)}"`;
+      if (s.header("ETag", l), s.req.headers["if-none-match"] === l) {
         s.status(304), s.res.end();
         return;
       }
-      const m = s.req.headers.range;
-      if (m && m.startsWith("bytes=")) {
-        let [d, c] = m.slice(6).split("-"), u = d ? parseInt(d, 10) : 0, f = c ? parseInt(c, 10) : r - 1;
-        if (Number.isNaN(u) && (u = 0), Number.isNaN(f) && (f = r - 1), u > f || u >= r) {
+      const p = s.req.headers.range;
+      if (p && p.startsWith("bytes=")) {
+        let [u, c] = p.slice(6).split("-"), d = u ? parseInt(u, 10) : 0, f = c ? parseInt(c, 10) : r - 1;
+        if (Number.isNaN(d) && (d = 0), Number.isNaN(f) && (f = r - 1), d > f || d >= r) {
           s.status(416).header("Content-Range", `bytes */${r}`), s.res.end();
           return;
         }
-        if (s.status(206).header("Content-Range", `bytes ${u}-${f}/${r}`), s.header("Content-Length", String(f - u + 1)), i) {
+        if (s.status(206).header("Content-Range", `bytes ${d}-${f}/${r}`), s.header("Content-Length", String(f - d + 1)), i) {
           s.res.end();
           return;
         }
-        const g = v(e, { start: u, end: f });
+        const g = v(e, { start: d, end: f });
         g.on("error", () => s.res.destroy()), g.pipe(s.res);
         return;
       }
@@ -466,18 +495,18 @@ class L {
         s.res.end();
         return;
       }
-      const p = v(e);
-      p.on("error", () => s.res.destroy()), p.pipe(s.res);
+      const m = v(e);
+      m.on("error", () => s.res.destroy()), m.pipe(s.res);
     } : null;
   }
 }
 export {
-  x as HttpException,
+  b as HttpException,
   q as PathRouteType,
-  z as PatternRouteType,
-  H as RequestContext,
+  B as PatternRouteType,
+  P as RequestContext,
   F as Router,
-  M as StaticIndex,
-  L as StaticRouteType
+  L as StaticIndex,
+  G as StaticRouteType
 };
 //# sourceMappingURL=index.js.map

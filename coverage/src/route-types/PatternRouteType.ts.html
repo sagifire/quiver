@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/293</span>
+                <span class='fraction'>0/295</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/293</span>
+                <span class='fraction'>0/295</span>
             </div>
         
             
@@ -356,7 +356,11 @@
 <a name='L291'></a><a href='#L291'>291</a>
 <a name='L292'></a><a href='#L292'>292</a>
 <a name='L293'></a><a href='#L293'>293</a>
-<a name='L294'></a><a href='#L294'>294</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L294'></a><a href='#L294'>294</a>
+<a name='L295'></a><a href='#L295'>295</a>
+<a name='L296'></a><a href='#L296'>296</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -651,6 +655,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >// PatternRouteType.ts</span></span></span>
 <span class="cstat-no" title="statement not covered" >import { IRouteType, Handler, RequestContext, RouteRuleBase, Pipe } from '../core/http.js'</span>
+<span class="cstat-no" title="statement not covered" >import { compose } from '../core/compose.js'</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >export type Method = 'GET'|'HEAD'|'POST'|'PUT'|'PATCH'|'DELETE'|'OPTIONS'</span>
 <span class="cstat-no" title="statement not covered" ></span>
@@ -750,18 +755,6 @@
 <span class="cstat-no" title="statement not covered" >    return tokens</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 <span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >function compose&lt;Ctx extends RequestContext&gt;(pipes: readonly Pipe&lt;Ctx&gt;[]|undefined, handler: Handler&lt;Ctx&gt;) {</span>
-<span class="cstat-no" title="statement not covered" >    if (!pipes || pipes.length === 0) {</span>
-<span class="cstat-no" title="statement not covered" >        return handler</span>
-<span class="cstat-no" title="statement not covered" >    }</span>
-<span class="cstat-no" title="statement not covered" >    return async (ctx: Ctx) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >        for (const pipe of pipes) {</span>
-<span class="cstat-no" title="statement not covered" >            await pipe(ctx)</span>
-<span class="cstat-no" title="statement not covered" >        }</span>
-<span class="cstat-no" title="statement not covered" >        return handler(ctx)</span>
-<span class="cstat-no" title="statement not covered" >    }</span>
-<span class="cstat-no" title="statement not covered" >}</span>
-<span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >type Exec&lt;Ctx extends RequestContext&gt; = Handler&lt;Ctx&gt;</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >class Node&lt;Ctx extends RequestContext&gt; {</span>
@@ -783,9 +776,7 @@
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >    setParam(name: string, validate?: Validator) {</span>
-<span class="cstat-no" title="statement not covered" >        if (this.wChild) {</span>
-<span class="cstat-no" title="statement not covered" >            throw new Error('Cannot add param at same level after wildcard')</span>
-<span class="cstat-no" title="statement not covered" >        }</span>
+<span class="cstat-no" title="statement not covered" >        // Обмеження на додавання param після wildcard видалено, оскільки пріоритет визначається під час матчингу.</span>
 <span class="cstat-no" title="statement not covered" >        if (!this.pChild) {</span>
 <span class="cstat-no" title="statement not covered" >            this.pChild = { name, validate, node: new Node&lt;Ctx&gt;() }</span>
 <span class="cstat-no" title="statement not covered" >        }</span>
@@ -858,8 +849,23 @@
 <span class="cstat-no" title="statement not covered" >        const method = (ctx.req.method as Method) || 'GET'</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >        if (pathname === '/') {</span>
-<span class="cstat-no" title="statement not covered" >            const h = this.root.getHandler(method)</span>
-<span class="cstat-no" title="statement not covered" >            return h ? (c: Ctx) =&gt; h(c) : null</span>
+<span class="cstat-no" title="statement not covered" >            // Спочатку перевіряємо статичний обробник для кореневого шляху</span>
+<span class="cstat-no" title="statement not covered" >            let h = this.root.getHandler(method)</span>
+<span class="cstat-no" title="statement not covered" >            if (h) {</span>
+<span class="cstat-no" title="statement not covered" >                return h</span>
+<span class="cstat-no" title="statement not covered" >            }</span>
+<span class="cstat-no" title="statement not covered" >            // Якщо статичного обробника немає, перевіряємо wildcard для кореневого шляху (наприклад, /*path)</span>
+<span class="cstat-no" title="statement not covered" >            if (this.root.wChild) {</span>
+<span class="cstat-no" title="statement not covered" >                h = this.root.wChild.node.getHandler(method)</span>
+<span class="cstat-no" title="statement not covered" >                if (h) {</span>
+<span class="cstat-no" title="statement not covered" >                    // Для кореневого шляху параметр wildcard має бути порожнім рядком</span>
+<span class="cstat-no" title="statement not covered" >                    return (c: Ctx) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >                        (c as any).params = { [this.root.wChild!.name]: '' }</span>
+<span class="cstat-no" title="statement not covered" >                        return h!(c)</span>
+<span class="cstat-no" title="statement not covered" >                    }</span>
+<span class="cstat-no" title="statement not covered" >                }</span>
+<span class="cstat-no" title="statement not covered" >            }</span>
+<span class="cstat-no" title="statement not covered" >            return null</span>
 <span class="cstat-no" title="statement not covered" >        }</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >        const parts = pathname.slice(1).split('/')</span>
@@ -949,7 +955,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-08-02T18:10:56.308Z
+                at 2025-08-02T19:20:35.154Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

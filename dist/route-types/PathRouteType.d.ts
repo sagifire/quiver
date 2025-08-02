@@ -7,7 +7,8 @@ export declare class PathRouteType<Ctx extends RequestContext = RequestContext> 
     readonly typeName: "PATH";
     private keys;
     private execs;
+    private pathMethods;
     addRule(rule: PathRule<Ctx>): void;
-    match(ctx: RequestContext): Handler<Ctx> | null;
+    match(ctx: Ctx): Handler<Ctx> | null;
     private lowerBound;
 }

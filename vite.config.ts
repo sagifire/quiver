@@ -6,7 +6,11 @@ import dts from 'vite-plugin-dts';
 export default defineConfig({
   test: {
     globals: true, 
-    environment: 'node', 
+    environment: 'node',
+    coverage: {
+      provider: 'v8',
+      reporter: ['html', 'text-summary'],
+    },
   },
   plugins: [
     dts({

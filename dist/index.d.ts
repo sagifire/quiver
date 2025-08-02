@@ -3,5 +3,6 @@ import { RequestContext, Handler, Method, Pipe, IRouteType, RouteRuleBase } from
 import { Router } from './core/Router.js';
 import { StaticIndex } from './services/StaticIndex.js';
 import { PathRouteType, PathRule } from './route-types/PathRouteType.js';
-import { StaticRouteType, StaticRule } from './route-types/StaticRouteType.js';
-export { RequestContext, Router, StaticIndex, PathRouteType, StaticRouteType, HttpException, type Handler, type Method, type Pipe, type IRouteType, type RouteRuleBase, type PathRule, type StaticRule };
+import { PatternRouteType, PatternRule } from './route-types/PatternRouteType.js';
+import { StaticRouteType, StaticRule, ContentTypeMap } from './route-types/StaticRouteType.js';
+export { RequestContext, Router, StaticIndex, PathRouteType, PatternRouteType, StaticRouteType, HttpException, type Handler, type Method, type Pipe, type IRouteType, type RouteRuleBase, type PathRule, type PatternRule, type StaticRule, type ContentTypeMap };

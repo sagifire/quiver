@@ -3,6 +3,13 @@ export interface StaticIndexOptions {
     urlBase: string;
     scanIntervalMs?: number;
     followSymlinks?: boolean;
+    maxFiles?: number;
+    maxDepth?: number;
+    allowWellKnown?: boolean;
+    logger?: {
+        warn: (...params: any[]) => void;
+        debug: (...params: any[]) => void;
+    };
 }
 export declare class StaticIndex {
     private opts;

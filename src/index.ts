@@ -16,7 +16,8 @@ import {
 import { StaticIndex } from './services/StaticIndex.js'
 
 import { PathRouteType, type PathRule } from './route-types/PathRouteType.js'
-import { StaticRouteType, type StaticRule } from './route-types/StaticRouteType.js'
+import { PatternRouteType, type PatternRule } from './route-types/PatternRouteType.js'
+import { StaticRouteType, type StaticRule, type ContentTypeMap } from './route-types/StaticRouteType.js'
 
 export {
     RequestContext,
@@ -25,6 +26,7 @@ export {
     StaticIndex,
 
     PathRouteType,
+    PatternRouteType,
     StaticRouteType,
 
     HttpException,
@@ -36,6 +38,9 @@ export {
     type RouteRuleBase,
 
     type PathRule,
-    type StaticRule
+    type PatternRule,
+    type StaticRule,
+    
+    type ContentTypeMap
 }
 

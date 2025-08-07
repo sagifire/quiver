@@ -65,5 +65,8 @@ jspm_packages/
 yarn.lock
 package-lock.json
 
+# Coverage
+coverage/
+
 #manage files
 project_manage/

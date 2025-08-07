@@ -95,7 +95,10 @@ export type Handler<Ctx extends RequestContext = RequestContext> =
 export type Pipe<Ctx extends RequestContext = RequestContext> =
     (ctx: Ctx) => void | Promise<void>
 
+export type RouteTypeName = string
+
 export interface RouteRuleBase<Ctx extends RequestContext = RequestContext> {
+    type: RouteTypeName
     handler: Handler<Ctx>
     pipes?: readonly Pipe<Ctx>[]
 }
@@ -104,7 +107,7 @@ export interface IRouteType<
     Ctx extends RequestContext = RequestContext,
     TRule extends RouteRuleBase<Ctx> = RouteRuleBase<Ctx>
 > {
-    readonly typeName: string
+    readonly typeName: RouteTypeName
     addRule(rule: TRule): void
     match(ctx: Ctx): ((ctx: Ctx) => void | Promise<void>) | null
 }

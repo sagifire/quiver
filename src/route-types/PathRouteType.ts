@@ -1,10 +1,11 @@
-import { IRouteType, RouteRuleBase, Pipe, RequestContext, Handler } from '../core/http.js'
+import { IRouteType, RouteRuleBase, RequestContext, Handler } from '../core/http.js'
 import { HttpException } from '../core/HttpException.js'
 import { compose } from '../core/compose.js'
 
 export interface PathRule<Ctx extends RequestContext = RequestContext>
     extends RouteRuleBase<Ctx>
 {
+    type: 'PATH'
     path: string
     methods?: ('GET'|'HEAD'|'POST'|'PUT'|'PATCH'|'DELETE'|'OPTIONS')[]
 }
@@ -21,7 +22,7 @@ const METHOD_ORDER: ReadonlyArray<string> = ['GET', 'HEAD', 'POST', 'PUT', 'PATC
 export class PathRouteType<Ctx extends RequestContext = RequestContext>
     implements IRouteType<Ctx, PathRule<Ctx>>
 {
-    readonly typeName = 'PATH' as const
+    readonly typeName = 'PATH'
 
     // Бінарний пошук по "METHOD␠PATH"
     private keys: string[] = []

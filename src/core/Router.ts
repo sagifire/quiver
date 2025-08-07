@@ -1,44 +1,46 @@
 import { IncomingMessage, ServerResponse } from 'node:http'
 
-import { HttpException } from './HttpException.js'
-import { RequestContext, Pipe, IRouteType, RouteRuleBase } from './http.js'
+import { RequestContext, Pipe, IRouteType, RouteRuleBase, RouteTypeName } from './http.js'
 
-type TypeNameOf<T> = T extends { typeName: infer N extends string } ? N : never
-type RuleOf<T>     = T extends IRouteType<any, infer R> ? R : never
+export type RuleRegistry<Ctx extends RequestContext> = Record<RouteTypeName, RouteRuleBase<Ctx>>
 
-type Registry<Ctx extends RequestContext> = Record<string, IRouteType<Ctx, any>>
-type DiscriminatedRuleUnion<TReg extends Registry<any>> =
-    { [K in keyof TReg]:
-        RuleOf<TReg[K]> & { type: K & string }
-    }[keyof TReg]
+export type RuleOfType<T, Ctx extends RequestContext> = T extends IRouteType<Ctx, infer R> ? R : never
 
-    
-type CtxFactory<Ctx extends RequestContext> =
+export type TypeRegistry<Ctx extends RequestContext> = Record<RouteTypeName, IRouteType<Ctx>>
+
+export type TypeNameOfRuleType<T> = T extends { typeName: infer R } ? R : never
+export type TypeNameOfRule<T> = T extends { type: infer R } ? R : never
+
+export type DiscriminatedRuleUnion<RuleRegistry extends Record<RouteTypeName, any>> =
+    keyof RuleRegistry extends never
+        ? never
+        : RuleRegistry[keyof RuleRegistry]
+
+export type CtxFactory<Ctx extends RequestContext> =
     | { class: new (req: IncomingMessage, res: ServerResponse) => Ctx, factory?: never }
     | { factory: (req: IncomingMessage, res: ServerResponse) => Ctx, class?: never }
-    | undefined
+    | undefined        
 
-export class Router <
+export class Router<
     Ctx extends RequestContext = RequestContext,
-    TReg extends Registry<Ctx> = {}
+    RReg extends RuleRegistry<Ctx> = {}
 > {
-    private reg: TReg
+    private reg: TypeRegistry<Ctx>
     private order: string[] = []
     private ctxFactory?: CtxFactory<Ctx>
-    private globalPipes: Array<(ctx: Ctx)=>void|Promise<void>> = []
+    private globalPipes: Array<Pipe<Ctx>> = []
 
     constructor(opts?: { context?: CtxFactory<Ctx> }) {
-        this.reg = {} as TReg
+        this.reg = {} as TypeRegistry<Ctx>
         this.ctxFactory = opts?.context
     }
 
-
-    useType<K extends string, T extends IRouteType<Ctx, any> & { typeName: K }>(
+    useType<T extends IRouteType<Ctx, RouteRuleBase<Ctx>>>(
         type: T
-    ): Router<Ctx, TReg & Record<K, T>> {
-        (this.reg as any)[type.typeName] = type
+    ): Router<Ctx, RReg & { [K in TypeNameOfRuleType<T>]: RuleOfType<T, Ctx> }> {
+        ;(this.reg as any)[type.typeName] = type
         this.order.push(type.typeName)
-        return this as any
+        return this as unknown as Router<Ctx, RReg & { [K in TypeNameOfRuleType<T>]: RuleOfType<T, Ctx>}>
     }
 
     useGlobalPipes(...pipes: Pipe<Ctx>[]) {
@@ -46,27 +48,34 @@ export class Router <
         return this
     }
 
-    addRule(rule: DiscriminatedRuleUnion<TReg>) {
-        const t = (this.reg as any)[rule.type] as IRouteType<Ctx, RouteRuleBase<Ctx>> | undefined
-        if (!t) throw new Error(`Route type "${rule.type}" is not registered`)
-        
+    addRule(rule: DiscriminatedRuleUnion<RReg>) {
+        const typeName = (rule as any).type as keyof RReg
+        const rt = (this.reg as any)[typeName] as IRouteType<Ctx, RouteRuleBase<Ctx>> | undefined
+        if (!rt) {
+            throw new Error(`Route type "${String(typeName)}" is not registered`)
+        }
         const { type: _omit, ...pureRule } = rule as any
-        t.addRule(pureRule)
+        rt.addRule(pureRule)
         return this
     }
 
-    addRules(rules: Array<DiscriminatedRuleUnion<TReg>>) {
-        for (const r of rules) this.addRule(r)
+    addRules(rules: Array<DiscriminatedRuleUnion<RReg>>) {
+        for (const r of rules) {
+            this.addRule(r)
+        }
         return this
     }
 
     private makeCtx(req: IncomingMessage, res: ServerResponse): Ctx {
-        if (this.ctxFactory?.factory) return this.ctxFactory.factory(req, res)
-        if (this.ctxFactory?.class)   return new this.ctxFactory.class(req, res)
+        if (this.ctxFactory?.factory) {
+            return this.ctxFactory.factory(req, res)
+        }
+        if (this.ctxFactory?.class) {
+            return new this.ctxFactory.class(req, res)
+        }
         return new RequestContext(req, res) as Ctx
     }
 
-    // Main server request handler
     async handler(req: IncomingMessage, res: ServerResponse) {
         const ctx = this.makeCtx(req, res)
         const base = 'http://' + (req.headers.host || 'localhost')
@@ -91,7 +100,11 @@ export class Router <
         } catch (e: any) {
             const code = e?.statusCode ?? 500
             res.statusCode = code
-            if (e?.headers) for (const [k, v] of Object.entries(e.headers)) res.setHeader(k, String(v))
+            if (e?.headers) {
+                for (const [k, v] of Object.entries(e.headers)) {
+                    res.setHeader(k, String(v))
+                }
+            }
             res.setHeader('Content-Type', 'application/json; charset=utf-8')
             res.end(JSON.stringify({ error: e?.expose ? e.message : 'Internal Server Error' }))
         }

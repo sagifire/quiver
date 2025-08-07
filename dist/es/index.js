@@ -1,11 +1,11 @@
-import { promises as w, createReadStream as v } from "node:fs";
-import C, { extname as S } from "node:path";
-class b extends Error {
-  constructor(t, e = "Http Error", s = t < 500, h = {}) {
-    super(e), this.statusCode = t, this.expose = s, this.headers = h;
+import { promises as y, createReadStream as P } from "node:fs";
+import S, { extname as M } from "node:path";
+class $ extends Error {
+  constructor(t, e = "Http Error", n = t < 500, l = {}) {
+    super(e), this.statusCode = t, this.expose = n, this.headers = l;
   }
 }
-class P {
+class D {
   constructor(t, e) {
     this.req = t, this.res = e;
   }
@@ -34,17 +34,17 @@ class P {
   }
   // Request body with limit and abort-safe
   async bodyRaw(t = this.limits.bodySize) {
-    return new Promise((e, s) => {
-      const h = [];
-      let r = 0, i = !1;
-      const a = (l) => {
-        i || (i = !0, this.req.destroy(), s(l));
+    return new Promise((e, n) => {
+      const l = [];
+      let s = 0, r = !1;
+      const a = (h) => {
+        r || (r = !0, this.req.destroy(), n(h));
       }, o = () => {
-        i || (i = !0, e(Buffer.concat(h)));
+        r || (r = !0, e(Buffer.concat(l)));
       };
-      this.req.once("error", a), this.req.once("aborted", () => a(new b(499, "Client Closed Request", !0))), this.req.on("data", (l) => {
-        if (r += l.length, r > t) return a(new b(413, "Content Too Large", !0));
-        h.push(l);
+      this.req.once("error", a), this.req.once("aborted", () => a(new $(499, "Client Closed Request", !0))), this.req.on("data", (h) => {
+        if (s += h.length, s > t) return a(new $(413, "Content Too Large", !0));
+        l.push(h);
       }), this.req.once("end", o);
     });
   }
@@ -53,11 +53,11 @@ class P {
     try {
       return JSON.parse(e.toString("utf8"));
     } catch {
-      throw new b(400, "Invalid JSON", !0);
+      throw new $(400, "Invalid JSON", !0);
     }
   }
 }
-class F {
+class V {
   reg;
   order = [];
   ctxFactory;
@@ -72,113 +72,116 @@ class F {
     return this.globalPipes.push(...t), this;
   }
   addRule(t) {
-    const e = this.reg[t.type];
-    if (!e) throw new Error(`Route type "${t.type}" is not registered`);
-    const { type: s, ...h } = t;
-    return e.addRule(h), this;
+    const e = t.type, n = this.reg[e];
+    if (!n)
+      throw new Error(`Route type "${String(e)}" is not registered`);
+    const { type: l, ...s } = t;
+    return n.addRule(s), this;
   }
   addRules(t) {
-    for (const e of t) this.addRule(e);
+    for (const e of t)
+      this.addRule(e);
     return this;
   }
   makeCtx(t, e) {
-    return this.ctxFactory?.factory ? this.ctxFactory.factory(t, e) : this.ctxFactory?.class ? new this.ctxFactory.class(t, e) : new P(t, e);
+    return this.ctxFactory?.factory ? this.ctxFactory.factory(t, e) : this.ctxFactory?.class ? new this.ctxFactory.class(t, e) : new D(t, e);
   }
-  // Main server request handler
   async handler(t, e) {
-    const s = this.makeCtx(t, e), h = "http://" + (t.headers.host || "localhost");
-    s.url = new URL(t.url || "/", h);
+    const n = this.makeCtx(t, e), l = "http://" + (t.headers.host || "localhost");
+    n.url = new URL(t.url || "/", l);
     try {
-      for (const r of this.globalPipes)
-        await r(s);
-      for (const r of this.order) {
-        const a = this.reg[r].match(s);
+      for (const s of this.globalPipes)
+        await s(n);
+      for (const s of this.order) {
+        const a = this.reg[s].match(n);
         if (a)
-          return await a(s);
+          return await a(n);
       }
       e.statusCode = 404, e.setHeader("Content-Type", "application/json; charset=utf-8"), e.end(JSON.stringify({ error: "Not Found" }));
-    } catch (r) {
-      const i = r?.statusCode ?? 500;
-      if (e.statusCode = i, r?.headers) for (const [a, o] of Object.entries(r.headers)) e.setHeader(a, String(o));
-      e.setHeader("Content-Type", "application/json; charset=utf-8"), e.end(JSON.stringify({ error: r?.expose ? r.message : "Internal Server Error" }));
+    } catch (s) {
+      const r = s?.statusCode ?? 500;
+      if (e.statusCode = r, s?.headers)
+        for (const [a, o] of Object.entries(s.headers))
+          e.setHeader(a, String(o));
+      e.setHeader("Content-Type", "application/json; charset=utf-8"), e.end(JSON.stringify({ error: s?.expose ? s.message : "Internal Server Error" }));
     }
   }
 }
-class L {
+class Z {
   constructor(t) {
-    this.opts = t, this.root = C.resolve(t.rootDir), this.base = t.urlBase.endsWith("/") ? t.urlBase.slice(0, -1) : t.urlBase;
+    this.opts = t, this.root = S.resolve(t.rootDir), this.base = t.urlBase === "/" ? "/" : t.urlBase.endsWith("/") ? t.urlBase.slice(0, -1) : t.urlBase;
   }
   map = /* @__PURE__ */ new Map();
   // "/static/a/b.js" => "/abs/a/b.js"
   root;
   base;
   timer;
-  start() {
-    this.rebuild().catch(() => {
+  async start() {
+    await this.rebuild().catch(() => {
     }), this.opts.scanIntervalMs && (this.timer = setInterval(() => this.rebuild().catch(() => {
-    }), this.opts.scanIntervalMs).unref());
+    }), this.opts.scanIntervalMs), this.timer.unref?.());
   }
   stop() {
     this.timer && clearInterval(this.timer);
   }
   // O(#files). Для великих дерев — інкрементал або шардінг по підкаталогах
   async rebuild() {
-    const t = /* @__PURE__ */ new Map(), e = /* @__PURE__ */ new Set(), s = await w.realpath(this.root).catch(() => this.root), h = (i) => i === s || i.startsWith(s + C.sep), r = async (i, a, o = 0) => {
-      if (this.opts.maxDepth && o > this.opts.maxDepth)
+    const t = /* @__PURE__ */ new Map(), e = /* @__PURE__ */ new Set(), n = await y.realpath(this.root).catch(() => this.root), l = (a) => a === n || a.startsWith(n + S.sep), s = this.base === "/" ? "" : this.base, r = async (a, o, h = 0) => {
+      if (this.opts.maxDepth && h > this.opts.maxDepth)
         return;
-      let l;
+      let m;
       try {
-        l = await w.readdir(i, { withFileTypes: !0 });
-      } catch (m) {
-        this.opts.logger?.warn?.(`readdir failed: ${i}`, m);
+        m = await y.readdir(a, { withFileTypes: !0 });
+      } catch (f) {
+        this.opts.logger?.warn?.(`readdir failed: ${a}`, f);
         return;
       }
-      let p = await w.realpath(i).catch(() => i);
-      if (h(p) && !e.has(p)) {
+      let p = await y.realpath(a).catch(() => a);
+      if (l(p) && !e.has(p)) {
         e.add(p);
-        for (const m of l) {
-          const u = m.name;
-          if (u.startsWith(".") && !(this.opts.allowWellKnown && u === ".well-known"))
+        for (const f of m) {
+          const d = f.name;
+          if (d.startsWith(".") && !(this.opts.allowWellKnown && d === ".well-known"))
             continue;
-          const c = C.join(i, u), d = a ? a + "/" + u : u;
-          let f;
+          const c = S.join(a, d), u = o ? o + "/" + d : d;
+          let T;
           try {
-            f = await w.lstat(c);
-          } catch (g) {
-            this.opts.logger?.debug?.(`lstat failed: ${c}`, g);
+            T = await y.lstat(c);
+          } catch (w) {
+            this.opts.logger?.debug?.(`lstat failed: ${c}`, w);
             continue;
           }
-          if (f.isSymbolicLink()) {
+          if (T.isSymbolicLink()) {
             if (!this.opts.followSymlinks) continue;
-            let g;
+            let w;
             try {
-              g = await w.realpath(c);
-            } catch (y) {
-              this.opts.logger?.debug?.(`realpath failed: ${c}`, y);
+              w = await y.realpath(c);
+            } catch (g) {
+              this.opts.logger?.debug?.(`realpath failed: ${c}`, g);
               continue;
             }
-            if (!h(g))
+            if (!l(w))
               continue;
             let E;
             try {
-              E = await w.stat(c);
-            } catch (y) {
-              this.opts.logger?.debug?.(`stat failed: ${c}`, y);
+              E = await y.stat(c);
+            } catch (g) {
+              this.opts.logger?.debug?.(`stat failed: ${c}`, g);
               continue;
             }
             if (E.isDirectory())
-              await r(c, d, o + 1);
+              await r(c, u, h + 1);
             else if (E.isFile()) {
-              const y = `${this.base}/${d.split(C.sep).join("/")}`;
-              t.set(y, c);
+              const g = `${s}/${u.split(S.sep).join("/")}`;
+              t.set(g, c);
             }
             continue;
           }
-          if (f.isDirectory())
-            await r(c, d, o + 1);
-          else if (f.isFile()) {
-            const g = `${this.base}/${d.split(C.sep).join("/")}`;
-            t.set(g, c);
+          if (T.isDirectory())
+            await r(c, u, h + 1);
+          else if (T.isFile()) {
+            const w = `${s}/${u.split(S.sep).join("/")}`;
+            t.set(w, c);
           }
         }
       }
@@ -190,25 +193,29 @@ class L {
   }
   resolveUrl(t) {
     const e = t.pathname;
-    if (!(e === this.base || e.startsWith(this.base + "/")))
+    if (!e || !e.startsWith("/") || e.split("/").includes(".."))
       return;
-    const s = this.lookup(e);
-    if (s && s.startsWith(this.root))
-      return s;
+    if (this.base !== "/") {
+      if (!(e === this.base || e.startsWith(this.base + "/")))
+        return;
+    }
+    const n = this.lookup(e);
+    if (n && n.startsWith(this.root))
+      return n;
   }
 }
-function k(n, t) {
-  return !n || n.length === 0 ? t : async (e) => {
-    for (const s of n)
-      await s(e);
+function O(i, t) {
+  return !i || i.length === 0 ? t : async (e) => {
+    for (const n of i)
+      await n(e);
     return t(e);
   };
 }
-function $(n) {
-  return !n || n === "/" ? "/" : n.endsWith("/") ? n.slice(0, -1) : n;
+function k(i) {
+  return !i || i === "/" ? "/" : i.endsWith("/") ? i.slice(0, -1) : i;
 }
-const O = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"];
-class q {
+const z = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"];
+class _ {
   typeName = "PATH";
   // Бінарний пошук по "METHOD␠PATH"
   keys = [];
@@ -216,115 +223,108 @@ class q {
   // Для 405: індекс шлях → множина дозволених методів
   pathMethods = /* @__PURE__ */ new Map();
   addRule(t) {
-    const e = $(t.path), s = (t.methods?.length ? t.methods : ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]).map((i) => i.toUpperCase()), h = k(t.pipes, t.handler);
-    for (const i of s) {
-      const a = `${i} ${e}`, o = this.lowerBound(this.keys, a);
-      this.keys.splice(o, 0, a), this.execs.splice(o, 0, h);
+    const e = k(t.path), n = (t.methods?.length ? t.methods : ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]).map((r) => r.toUpperCase()), l = O(t.pipes, t.handler);
+    for (const r of n) {
+      const a = `${r} ${e}`, o = this.lowerBound(this.keys, a);
+      this.keys.splice(o, 0, a), this.execs.splice(o, 0, l);
     }
-    let r = this.pathMethods.get(e);
-    r || (r = /* @__PURE__ */ new Set(), this.pathMethods.set(e, r));
-    for (const i of s)
-      r.add(i);
+    let s = this.pathMethods.get(e);
+    s || (s = /* @__PURE__ */ new Set(), this.pathMethods.set(e, s));
+    for (const r of n)
+      s.add(r);
   }
   match(t) {
-    const e = (t.req.method || "GET").toUpperCase(), s = $(t.url.pathname), h = `${e} ${s}`;
-    let r = this.lowerBound(this.keys, h);
-    if (r < this.keys.length && this.keys[r] === h)
-      return this.execs[r];
+    const e = (t.req.method || "GET").toUpperCase(), n = k(t.url.pathname), l = `${e} ${n}`;
+    let s = this.lowerBound(this.keys, l);
+    if (s < this.keys.length && this.keys[s] === l)
+      return this.execs[s];
     if (e === "HEAD") {
-      const a = `GET ${s}`;
-      if (r = this.lowerBound(this.keys, a), r < this.keys.length && this.keys[r] === a) {
-        const o = this.execs[r];
-        return async (l) => {
-          const p = l.res.end;
-          l.res.end = (m) => l.res, await o(l), l.res.end = p, l.res.statusCode = l.res.statusCode === 200 ? 200 : l.res.statusCode, l.res.end();
+      const a = `GET ${n}`;
+      if (s = this.lowerBound(this.keys, a), s < this.keys.length && this.keys[s] === a) {
+        const o = this.execs[s];
+        return async (h) => {
+          const m = h.res.end;
+          h.res.end = (p) => h.res, await o(h), h.res.end = m, h.res.statusCode = h.res.statusCode === 200 ? 200 : h.res.statusCode, h.res.end();
         };
       }
     }
-    const i = this.pathMethods.get(s);
-    if (i && i.size > 0) {
-      const a = new Set(i);
-      i.has("GET") && a.add("HEAD");
-      const o = O.filter((p) => a.has(p)), l = o.length ? o.join(", ") : Array.from(a).join(", ");
+    const r = this.pathMethods.get(n);
+    if (r && r.size > 0) {
+      const a = new Set(r);
+      r.has("GET") && a.add("HEAD");
+      const o = z.filter((m) => a.has(m)), h = o.length ? o.join(", ") : Array.from(a).join(", ");
       return () => {
-        throw new b(405, "Method Not Allowed", !0, { Allow: l });
+        throw new $(405, "Method Not Allowed", !0, { Allow: h });
       };
     }
     return null;
   }
   lowerBound(t, e) {
-    let s = 0, h = t.length;
-    for (; s < h; ) {
-      const r = s + h >>> 1;
-      t[r] < e ? s = r + 1 : h = r;
+    let n = 0, l = t.length;
+    for (; n < l; ) {
+      const s = n + l >>> 1;
+      t[s] < e ? n = s + 1 : l = s;
     }
-    return s;
+    return n;
   }
 }
-function j(n, t) {
-  return !n || n.length === 0 ? t : async (e) => {
-    for (const s of n)
-      await s(e);
-    return t(e);
-  };
-}
-const A = {
-  int: (n) => /^-?\d+$/.test(n),
-  uuid: (n) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(n),
-  hex: (n) => /^[0-9a-f]+$/i.test(n),
-  alpha: (n) => /^[A-Za-z]+$/.test(n)
+const F = {
+  int: (i) => /^-?\d+$/.test(i),
+  uuid: (i) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(i),
+  hex: (i) => /^[0-9a-f]+$/i.test(i),
+  alpha: (i) => /^[A-Za-z]+$/.test(i)
 };
-function R(n) {
-  if (n) {
-    if (typeof n == "function")
-      return n;
-    if (n instanceof RegExp) {
-      const t = n;
+function A(i) {
+  if (i) {
+    if (typeof i == "function")
+      return i;
+    if (i instanceof RegExp) {
+      const t = i;
       return (e) => t.test(e);
     }
-    return A[n];
+    return F[i];
   }
 }
-function x(n) {
-  return !n || n === "/" ? "/" : n.endsWith("/") ? n.slice(0, -1) : n;
+function j(i) {
+  return !i || i === "/" ? "/" : i.endsWith("/") ? i.slice(0, -1) : i;
 }
-function H(n) {
+function N(i) {
   try {
-    return decodeURIComponent(n);
+    return decodeURIComponent(i);
   } catch {
     return null;
   }
 }
-function D(n, t) {
-  const e = x(n);
+function W(i, t) {
+  const e = j(i);
   if (e === "/")
     return [];
-  const s = e.slice(1).split("/"), h = [];
-  for (let r = 0; r < s.length; r++) {
-    const i = s[r];
-    if (i.startsWith(":")) {
-      const a = /^:([A-Za-z_][A-Za-z0-9_]*)(?:\((.+)\))?$/.exec(i);
+  const n = e.slice(1).split("/"), l = [];
+  for (let s = 0; s < n.length; s++) {
+    const r = n[s];
+    if (r.startsWith(":")) {
+      const a = /^:([A-Za-z_][A-Za-z0-9_]*)(?:\((.+)\))?$/.exec(r);
       if (!a)
-        throw new Error(`Invalid param segment: ${i}`);
+        throw new Error(`Invalid param segment: ${r}`);
       const o = a[1];
       if (!o)
-        throw new Error(`Invalid param name in segment: ${i}`);
-      let l;
-      a[2] ? l = R(new RegExp(`^(?:${a[2]})$`)) : t && t[o] && (l = R(t[o])), h.push({ t: "param", name: o, validate: l });
+        throw new Error(`Invalid param name in segment: ${r}`);
+      let h;
+      a[2] ? h = A(new RegExp(`^(?:${a[2]})$`)) : t && t[o] && (h = A(t[o])), l.push({ t: "param", name: o, validate: h });
       continue;
     }
-    if (i === "*" || i.startsWith("*")) {
-      const a = i === "*" ? "wild" : i.slice(1);
-      if (r !== s.length - 1)
+    if (r === "*" || r.startsWith("*")) {
+      const a = r === "*" ? "wild" : r.slice(1);
+      if (s !== n.length - 1)
         throw new Error("Wildcard must be the last segment");
-      h.push({ t: "wildcard", name: a });
+      l.push({ t: "wildcard", name: a });
       continue;
     }
-    h.push({ t: "static", val: i });
+    l.push({ t: "static", val: r });
   }
-  return h;
+  return l;
 }
-class T {
+class R {
   sChildren = null;
   pChild = null;
   wChild = null;
@@ -332,98 +332,98 @@ class T {
   getOrAddStatic(t) {
     this.sChildren || (this.sChildren = /* @__PURE__ */ new Map());
     let e = this.sChildren.get(t);
-    return e || (e = new T(), this.sChildren.set(t, e)), e;
+    return e || (e = new R(), this.sChildren.set(t, e)), e;
   }
   setParam(t, e) {
-    return this.pChild || (this.pChild = { name: t, validate: e, node: new T() }), this.pChild.node;
+    return this.pChild || (this.pChild = { name: t, validate: e, node: new R() }), this.pChild.node;
   }
   setWildcard(t) {
-    return this.wChild || (this.wChild = { name: t, node: new T() }), this.wChild.node;
+    return this.wChild || (this.wChild = { name: t, node: new R() }), this.wChild.node;
   }
   setHandler(t, e) {
     this.handlers || (this.handlers = /* @__PURE__ */ new Map());
-    for (const s of t) {
-      if (this.handlers.has(s))
-        throw new Error(`Duplicate handler for method ${s}`);
-      this.handlers.set(s, e);
+    for (const n of t) {
+      if (this.handlers.has(n))
+        throw new Error(`Duplicate handler for method ${n}`);
+      this.handlers.set(n, e);
     }
   }
   getHandler(t) {
     return this.handlers ? (this.handlers.get(t) || (t === "HEAD" ? this.handlers.get("GET") : void 0)) ?? null : null;
   }
 }
-class B {
-  typeName = "PATH_PATTERN";
-  root = new T();
+class K {
+  typeName = "PATTERN";
+  root = new R();
   addRule(t) {
-    const e = t.methods?.length ? t.methods : ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], s = D(t.pattern, t.constraints), h = j(t.pipes, t.handler);
-    let r = this.root;
-    for (let i = 0; i < s.length; i++) {
-      const a = s[i];
+    const e = t.methods?.length ? t.methods : ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], n = W(t.pattern, t.constraints), l = O(t.pipes, t.handler);
+    let s = this.root;
+    for (let r = 0; r < n.length; r++) {
+      const a = n[r];
       if (a.t === "static")
-        r = r.getOrAddStatic(a.val);
+        s = s.getOrAddStatic(a.val);
       else if (a.t === "param")
-        r = r.setParam(a.name, a.validate);
-      else if (r = r.setWildcard(a.name), i !== s.length - 1)
+        s = s.setParam(a.name, a.validate);
+      else if (s = s.setWildcard(a.name), r !== n.length - 1)
         throw new Error("Wildcard must be the last segment");
     }
-    r.setHandler(e, h);
+    s.setHandler(e, l);
   }
   match(t) {
-    const e = x(t.url.pathname), s = t.req.method || "GET";
+    const e = j(t.url.pathname), n = t.req.method || "GET";
     if (e === "/") {
-      let o = this.root.getHandler(s);
-      return o || (this.root.wChild && (o = this.root.wChild.node.getHandler(s), o) ? (l) => (l.params = { [this.root.wChild.name]: "" }, o(l)) : null);
+      let o = this.root.getHandler(n);
+      return o || (this.root.wChild && (o = this.root.wChild.node.getHandler(n), o) ? (h) => (h.params = { [this.root.wChild.name]: "" }, o(h)) : null);
     }
-    const h = e.slice(1).split("/");
-    let r = null;
-    const i = (o, l) => {
-      if (l === h.length)
-        return o.getHandler(s);
-      const p = h[l];
-      if (p === void 0)
+    const l = e.slice(1).split("/");
+    let s = null;
+    const r = (o, h) => {
+      if (h === l.length)
+        return o.getHandler(n);
+      const m = l[h];
+      if (m === void 0)
         return null;
-      const m = H(p);
-      if (m === null)
+      const p = N(m);
+      if (p === null)
         return null;
       if (o.sChildren) {
-        const u = o.sChildren.get(m);
-        if (u) {
-          const c = i(u, l + 1);
-          if (c)
-            return c;
+        const f = o.sChildren.get(p);
+        if (f) {
+          const d = r(f, h + 1);
+          if (d)
+            return d;
         }
       }
       if (o.pChild) {
-        const { name: u, validate: c, node: d } = o.pChild;
-        if (!c || c(m)) {
-          r || (r = /* @__PURE__ */ Object.create(null)), r[u] = m;
-          const f = i(d, l + 1);
-          if (f)
-            return f;
-          delete r[u];
+        const { name: f, validate: d, node: c } = o.pChild;
+        if (!d || d(p)) {
+          s || (s = /* @__PURE__ */ Object.create(null)), s[f] = p;
+          const u = r(c, h + 1);
+          if (u)
+            return u;
+          delete s[f];
         }
       }
       if (o.wChild) {
-        let u = "";
-        for (let d = l; d < h.length; d++) {
-          const f = H(h[d]);
-          if (f === null)
+        let f = "";
+        for (let c = h; c < l.length; c++) {
+          const u = N(l[c]);
+          if (u === null)
             return null;
-          u += (d === l ? "" : "/") + f;
+          f += (c === h ? "" : "/") + u;
         }
-        r || (r = /* @__PURE__ */ Object.create(null)), r[o.wChild.name] = u;
-        const c = o.wChild.node.getHandler(s);
-        if (c)
-          return c;
-        delete r[o.wChild.name];
+        s || (s = /* @__PURE__ */ Object.create(null)), s[o.wChild.name] = f;
+        const d = o.wChild.node.getHandler(n);
+        if (d)
+          return d;
+        delete s[o.wChild.name];
       }
       return null;
-    }, a = i(this.root, 0);
-    return a ? (o) => (r && (o.params = r), a(o)) : null;
+    }, a = r(this.root, 0);
+    return a ? (o) => (s && (o.params = s), a(o)) : null;
   }
 }
-const M = {
+const q = {
   ".html": "text/html; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".txt": "text/plain; charset=utf-8",
@@ -440,73 +440,143 @@ const M = {
   ".mp3": "audio/mpeg",
   ".wav": "audio/wav"
 };
-function N(n) {
-  if (!n)
+function I(i) {
+  if (!i)
     return {};
   const t = {};
-  for (const [e, s] of Object.entries(n)) {
-    const h = e.startsWith(".") ? e.toLowerCase() : "." + e.toLowerCase();
-    t[h] = s;
+  for (const [e, n] of Object.entries(i)) {
+    const l = e.startsWith(".") ? e.toLowerCase() : "." + e.toLowerCase();
+    t[l] = n;
   }
   return t;
 }
-function W(n, t) {
-  return t && (/^text\//.test(n) || /^application\/json\b/.test(n)) && !/;\s*charset=/i.test(n) ? `${n}; charset=${t}` : n;
+function L(i, t) {
+  return t && (/^text\//.test(i) || /^application\/json\b/.test(i)) && !/;\s*charset=/i.test(i) ? `${i}; charset=${t}` : i;
 }
-class G {
+function B(i) {
+  const t = /* @__PURE__ */ new Map();
+  if (!i)
+    return t;
+  const e = i.split(",");
+  for (const n of e) {
+    const l = n.trim();
+    if (!l)
+      continue;
+    const s = l.split(";"), r = s[0]?.trim()?.toLowerCase();
+    if (!r)
+      continue;
+    let a = 1;
+    for (let o = 1; o < s.length; o++) {
+      const [h, m] = s[o].split("=").map((p) => p.trim());
+      if (h && h.toLowerCase() === "q") {
+        const p = Number(m);
+        Number.isNaN(p) || (a = p);
+      }
+    }
+    t.set(r, a);
+  }
+  return t;
+}
+async function U(i, t, e) {
+  for (const n of t) {
+    const l = e.get(n);
+    if (l === 0 || l === void 0 && e.size > 0)
+      continue;
+    const s = `${i}.${n === "br" ? "br" : "gz"}`;
+    try {
+      if ((await y.stat(s)).isFile())
+        return { path: s, encoding: n };
+    } catch {
+    }
+  }
+  return null;
+}
+class X {
   constructor(t) {
-    this.cfg = t, this.resolveCT = t.resolveContentType, this.ct = { ...M, ...N(t.contentTypes) }, this.defaultCT = t.defaultContentType ?? "application/octet-stream", this.defaultTextCharset = t.defaultTextCharset ?? "utf-8";
+    this.cfg = t, this.resolveCT = t.resolveContentType, this.ct = { ...q, ...I(t.contentTypes) }, this.defaultCT = t.defaultContentType ?? "application/octet-stream", this.defaultTextCharset = t.defaultTextCharset ?? "utf-8";
+    const e = t.precompressed ?? {};
+    this.pre = {
+      enabled: e.enabled ?? !1,
+      prefer: e.prefer ?? ["br", "gzip"],
+      useSiblingFiles: e.useSiblingFiles ?? !0,
+      resolver: e.resolver,
+      // опційний
+      allowRangesForCompressed: e.allowRangesForCompressed ?? !1,
+      alwaysSetVary: e.alwaysSetVary ?? !0
+    };
   }
   typeName = "STATIC";
   ct;
   resolveCT;
   defaultCT;
   defaultTextCharset;
+  pre;
   addRule(t) {
   }
   match(t) {
     if (t.req.method !== "GET" && t.req.method !== "HEAD")
       return null;
-    const e = this.cfg.index.resolveUrl(t.url);
-    return e ? async (s) => {
-      const h = await w.stat(e), r = h.size, i = s.req.method === "HEAD", a = S(e).toLowerCase(), o = this.resolveCT?.(a, e, h, s) ?? this.ct[a] ?? this.defaultCT;
-      s.header("X-Content-Type-Options", "nosniff"), s.header("Accept-Ranges", "bytes"), s.header("Last-Modified", h.mtime.toUTCString()), s.header("Content-Type", W(o, this.defaultTextCharset));
-      const l = `W/"${r}-${Math.trunc(h.mtimeMs)}"`;
-      if (s.header("ETag", l), s.req.headers["if-none-match"] === l) {
-        s.status(304), s.res.end();
+    const n = String(t.req.url ?? "").split("?")[0].split("#")[0];
+    let l = n;
+    try {
+      l = decodeURIComponent(n);
+    } catch {
+    }
+    if (l.split("/").includes(".."))
+      return null;
+    const s = this.cfg.index.resolveUrl(t.url);
+    return s ? async (r) => {
+      const a = await y.stat(s), o = a.size, h = r.req.method === "HEAD", m = M(s).toLowerCase(), p = this.resolveCT?.(m, s, a, r) ?? this.ct[m] ?? this.defaultCT;
+      r.header("X-Content-Type-Options", "nosniff"), r.header("Last-Modified", a.mtime.toUTCString()), r.header("Content-Type", L(p, this.defaultTextCharset));
+      let f = s, d = a, c = null;
+      if (this.pre.enabled) {
+        const g = B(r.req.headers["accept-encoding"]);
+        this.pre.alwaysSetVary && r.header("Vary", "Accept-Encoding");
+        let C = null;
+        this.pre.resolver ? C = await this.pre.resolver(s, r.req.headers["accept-encoding"]) : this.pre.useSiblingFiles && g.size > 0 && (C = await U(s, this.pre.prefer, g)), C && (f = C.path, c = C.encoding, d = await y.stat(f), r.header("Content-Encoding", c));
+      }
+      const u = d.size, T = c ? `W/"${u}-${Math.trunc(d.mtimeMs)}-${c}"` : `W/"${o}-${Math.trunc(a.mtimeMs)}"`;
+      r.header("ETag", T);
+      const w = r.req.headers["if-none-match"];
+      if (w && w === T) {
+        r.status(304), r.res.end();
         return;
       }
-      const p = s.req.headers.range;
-      if (p && p.startsWith("bytes=")) {
-        let [u, c] = p.slice(6).split("-"), d = u ? parseInt(u, 10) : 0, f = c ? parseInt(c, 10) : r - 1;
-        if (Number.isNaN(d) && (d = 0), Number.isNaN(f) && (f = r - 1), d > f || d >= r) {
-          s.status(416).header("Content-Range", `bytes */${r}`), s.res.end();
+      if (!c || this.pre.allowRangesForCompressed) {
+        r.header("Accept-Ranges", "bytes");
+        const g = r.req.headers.range;
+        if (g && g.startsWith("bytes=")) {
+          let [C, x] = g.slice(6).split("-"), b = C ? parseInt(C, 10) : 0, v = x ? parseInt(x, 10) : u - 1;
+          if (Number.isNaN(b) && (b = 0), Number.isNaN(v) && (v = u - 1), b > v || b >= u) {
+            r.status(416).header("Content-Range", `bytes */${u}`), r.res.end();
+            return;
+          }
+          if (r.status(206).header("Content-Range", `bytes ${b}-${v}/${u}`), r.header("Content-Length", String(v - b + 1)), h) {
+            r.res.end();
+            return;
+          }
+          const H = P(f, { start: b, end: v });
+          H.on("error", () => r.res.destroy()), H.pipe(r.res);
           return;
         }
-        if (s.status(206).header("Content-Range", `bytes ${d}-${f}/${r}`), s.header("Content-Length", String(f - d + 1)), i) {
-          s.res.end();
-          return;
-        }
-        const g = v(e, { start: d, end: f });
-        g.on("error", () => s.res.destroy()), g.pipe(s.res);
+      } else
+        r.header("Accept-Ranges", "none");
+      if (r.status(200).header("Content-Length", String(u)), h) {
+        r.res.end();
         return;
       }
-      if (s.status(200).header("Content-Length", String(r)), i) {
-        s.res.end();
-        return;
-      }
-      const m = v(e);
-      m.on("error", () => s.res.destroy()), m.pipe(s.res);
+      const E = P(f);
+      E.on("error", () => r.res.destroy()), E.pipe(r.res);
     } : null;
   }
 }
 export {
-  b as HttpException,
-  q as PathRouteType,
-  B as PatternRouteType,
-  P as RequestContext,
-  F as Router,
-  L as StaticIndex,
-  G as StaticRouteType
+  $ as HttpException,
+  _ as PathRouteType,
+  K as PatternRouteType,
+  D as RequestContext,
+  V as Router,
+  Z as StaticIndex,
+  X as StaticRouteType
 };
 //# sourceMappingURL=index.js.map

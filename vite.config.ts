@@ -13,9 +13,11 @@ export default defineConfig({
     },
   },
   plugins: [
-    dts({
+    (dts as any)({
+      tsconfigPath: './tsconfig.build.json',
       insertTypesEntry: true,
-      // rollupTypes: true, // if you wont one .d.ts file
+      // rollupTypes: true, // if you want one .d.ts file
+      // skipDiagnostics: true, // enable if you want to skip type checking during dts generation
     }),
   ],
   build: {

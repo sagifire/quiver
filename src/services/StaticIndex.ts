@@ -24,13 +24,15 @@ export class StaticIndex {
 
     constructor(private opts: StaticIndexOptions) {
         this.root = path.resolve(opts.rootDir)
-        this.base = opts.urlBase.endsWith('/') ? opts.urlBase.slice(0,-1) : opts.urlBase
+        // preserve root "/" as a distinct base; otherwise trim trailing slash
+        this.base = opts.urlBase === '/' ? '/' : (opts.urlBase.endsWith('/') ? opts.urlBase.slice(0, -1) : opts.urlBase)
     }
 
-    start() {
-        this.rebuild().catch(()=>{})
+    async start(): Promise<void> {
+        await this.rebuild().catch(()=>{})
         if (this.opts.scanIntervalMs) {
-            this.timer = setInterval(() => this.rebuild().catch(()=>{}), this.opts.scanIntervalMs).unref()
+            this.timer = setInterval(() => this.rebuild().catch(()=>{}), this.opts.scanIntervalMs)
+            this.timer.unref?.()
         }
     }
 
@@ -48,6 +50,9 @@ export class StaticIndex {
 
         const inRoot = (p: string) =>
             p === rootReal || p.startsWith(rootReal + path.sep)
+
+        // basePrefix used to avoid double slashes when base === '/'
+        const basePrefix = this.base === '/' ? '' : this.base
 
         const walk = async (dirAbs: string, rel: string, depth = 0) => {
             // (optional) depth limit
@@ -115,7 +120,7 @@ export class StaticIndex {
                     if (st.isDirectory()) {
                         await walk(childAbs, childRel, depth + 1)
                     } else if (st.isFile()) {
-                        const urlPath = `${this.base}/${childRel.split(path.sep).join('/')}`
+                        const urlPath = `${basePrefix}/${childRel.split(path.sep).join('/')}`
                         next.set(urlPath, childAbs); // save the path via link — ok
                     }
                     continue
@@ -125,7 +130,7 @@ export class StaticIndex {
                 if (lst.isDirectory()) {
                     await walk(childAbs, childRel, depth + 1)
                 } else if (lst.isFile()) {
-                    const urlPath = `${this.base}/${childRel.split(path.sep).join('/')}`
+                    const urlPath = `${basePrefix}/${childRel.split(path.sep).join('/')}`
                     next.set(urlPath, childAbs)
                 }
                 // other types — ignore
@@ -148,9 +153,25 @@ export class StaticIndex {
 
     resolveUrl(url: URL): string | undefined {
         const pathname = url.pathname
-        if (!(pathname === this.base || pathname.startsWith(this.base + '/'))) {
+
+        // Reject any path that contains ".." segments to avoid traversal even if normalized
+        // also reject empty or non-absolute paths
+        if (!pathname || !pathname.startsWith('/')) {
             return undefined
         }
+        if (pathname.split('/').includes('..')) {
+            return undefined
+        }
+
+        // check base match: if base is '/', allow any absolute path starting with '/'
+        if (this.base === '/') {
+            // pathname already starts with '/'
+        } else {
+            if (!(pathname === this.base || pathname.startsWith(this.base + '/'))) {
+                return undefined
+            }
+        }
+
         const abs = this.lookup(pathname)
         // додатковий рантайм-захист від traversal (хоч ми індексуємо, все одно перевіримо):
         if (abs && abs.startsWith(this.root)) {

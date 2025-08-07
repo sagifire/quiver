@@ -1,12 +1,11 @@
 // PatternRouteType.ts
-import { IRouteType, Handler, RequestContext, RouteRuleBase, Pipe } from '../core/http.js'
+import { IRouteType, Handler, RequestContext, RouteRuleBase, Pipe, Method } from '../core/http.js'
 import { compose } from '../core/compose.js'
-
-export type Method = 'GET'|'HEAD'|'POST'|'PUT'|'PATCH'|'DELETE'|'OPTIONS'
 
 export interface PatternRule<Ctx extends RequestContext = RequestContext>
     extends RouteRuleBase<Ctx>
 {
+    type: 'PATTERN'
     pattern: string
     methods?: Method[]
     constraints?: Record<string, 'int'|'uuid'|'hex'|'alpha'|RegExp|((v: string) => boolean)>
@@ -161,7 +160,7 @@ class Node<Ctx extends RequestContext> {
 export class PatternRouteType<Ctx extends RequestContext = RequestContext>
     implements IRouteType<Ctx, PatternRule<Ctx>>
 {
-    readonly typeName = 'PATH_PATTERN' as const
+    readonly typeName = 'PATTERN'
     private root = new Node<Ctx>()
 
     addRule(rule: PatternRule<Ctx>) {

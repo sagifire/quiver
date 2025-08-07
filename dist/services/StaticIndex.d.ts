@@ -18,7 +18,7 @@ export declare class StaticIndex {
     private base;
     private timer?;
     constructor(opts: StaticIndexOptions);
-    start(): void;
+    start(): Promise<void>;
     stop(): void;
     private rebuild;
     lookup(urlPath: string): string | undefined;

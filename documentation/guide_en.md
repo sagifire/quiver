@@ -41,10 +41,9 @@ import {
   RequestContext
 } from '@sagifire/quiver'
 
+// create router and register path-based route type
 const router = new Router()
-
-// register path-based route type
-router.useType(new PathRouteType())
+  .useType(new PathRouteType())
 
 // add a simple route rule
 router.addRule({
@@ -354,9 +353,8 @@ import {
 } from '@sagifire/quiver'
 
 const router = new Router()
-
-router.useType(new PathRouteType())
-router.useType(new PatternRouteType())
+  .useType(new PathRouteType())
+  .useType(new PatternRouteType())
 
 const index = new StaticIndex({ rootDir: './public', urlBase: '/static', scanIntervalMs: 5000 })
 index.start()

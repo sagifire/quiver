@@ -1,5 +1,5 @@
-import { promises as y, createReadStream as P } from "node:fs";
-import S, { extname as A } from "node:path";
+import { promises as C, createReadStream as P } from "node:fs";
+import S, { extname as j } from "node:path";
 class R extends Error {
   constructor(t, e = "Http Error", n = t < 500, l = {}) {
     super(e), this.statusCode = t, this.expose = n, this.headers = l;
@@ -127,17 +127,17 @@ class Z {
   }
   // O(#files). Для великих дерев — інкрементал або шардінг по підкаталогах
   async rebuild() {
-    const t = /* @__PURE__ */ new Map(), e = /* @__PURE__ */ new Set(), n = await y.realpath(this.root).catch(() => this.root), l = (a) => a === n || a.startsWith(n + S.sep), s = this.base === "/" ? "" : this.base, r = async (a, o, h = 0) => {
+    const t = /* @__PURE__ */ new Map(), e = /* @__PURE__ */ new Set(), n = await C.realpath(this.root).catch(() => this.root), l = (a) => a === n || a.startsWith(n + S.sep), s = this.base === "/" ? "" : this.base, r = async (a, o, h = 0) => {
       if (this.opts.maxDepth && h > this.opts.maxDepth)
         return;
       let m;
       try {
-        m = await y.readdir(a, { withFileTypes: !0 });
+        m = await C.readdir(a, { withFileTypes: !0 });
       } catch (f) {
         this.opts.logger?.warn?.(`readdir failed: ${a}`, f);
         return;
       }
-      let p = await y.realpath(a).catch(() => a);
+      let p = await C.realpath(a).catch(() => a);
       if (l(p) && !e.has(p)) {
         e.add(p);
         for (const f of m) {
@@ -147,7 +147,7 @@ class Z {
           const c = S.join(a, d), u = o ? o + "/" + d : d;
           let b;
           try {
-            b = await y.lstat(c);
+            b = await C.lstat(c);
           } catch (w) {
             this.opts.logger?.debug?.(`lstat failed: ${c}`, w);
             continue;
@@ -156,23 +156,23 @@ class Z {
             if (!this.opts.followSymlinks) continue;
             let w;
             try {
-              w = await y.realpath(c);
+              w = await C.realpath(c);
             } catch (g) {
               this.opts.logger?.debug?.(`realpath failed: ${c}`, g);
               continue;
             }
             if (!l(w))
               continue;
-            let C;
+            let y;
             try {
-              C = await y.stat(c);
+              y = await C.stat(c);
             } catch (g) {
               this.opts.logger?.debug?.(`stat failed: ${c}`, g);
               continue;
             }
-            if (C.isDirectory())
+            if (y.isDirectory())
               await r(c, u, h + 1);
-            else if (C.isFile()) {
+            else if (y.isFile()) {
               const g = `${s}/${u.split(S.sep).join("/")}`;
               t.set(g, c);
             }
@@ -185,9 +185,9 @@ class Z {
             t.set(w, c);
           }
           for (const w of this.indexFiles) {
-            const C = s + o + "/" + w;
-            if (t.has(C)) {
-              t.set(s + o, a);
+            const y = s + o + "/" + w;
+            if (t.has(y)) {
+              t.set(s + o, t.get(y));
               break;
             }
           }
@@ -212,7 +212,7 @@ class Z {
       return n;
   }
 }
-function O(i, t) {
+function N(i, t) {
   return !i || i.length === 0 ? t : async (e) => {
     for (const n of i)
       await n(e);
@@ -231,7 +231,7 @@ class _ {
   // Для 405: індекс шлях → множина дозволених методів
   pathMethods = /* @__PURE__ */ new Map();
   addRule(t) {
-    const e = k(t.path), n = (t.methods?.length ? t.methods : ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]).map((r) => r.toUpperCase()), l = O(t.pipes, t.handler);
+    const e = k(t.path), n = (t.methods?.length ? t.methods : ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]).map((r) => r.toUpperCase()), l = N(t.pipes, t.handler);
     for (const r of n) {
       const a = `${r} ${e}`, o = this.lowerBound(this.keys, a);
       this.keys.splice(o, 0, a), this.execs.splice(o, 0, l);
@@ -293,10 +293,10 @@ function F(i) {
     return z[i];
   }
 }
-function j(i) {
+function O(i) {
   return !i || i === "/" ? "/" : i.endsWith("/") ? i.slice(0, -1) : i;
 }
-function N(i) {
+function A(i) {
   try {
     return decodeURIComponent(i);
   } catch {
@@ -304,7 +304,7 @@ function N(i) {
   }
 }
 function W(i, t) {
-  const e = j(i);
+  const e = O(i);
   if (e === "/")
     return [];
   const n = e.slice(1).split("/"), l = [];
@@ -364,7 +364,7 @@ class K {
   typeName = "PATTERN";
   root = new x();
   addRule(t) {
-    const e = t.methods?.length ? t.methods : ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], n = W(t.pattern, t.constraints), l = O(t.pipes, t.handler);
+    const e = t.methods?.length ? t.methods : ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], n = W(t.pattern, t.constraints), l = N(t.pipes, t.handler);
     let s = this.root;
     for (let r = 0; r < n.length; r++) {
       const a = n[r];
@@ -378,7 +378,7 @@ class K {
     s.setHandler(e, l);
   }
   match(t) {
-    const e = j(t.url.pathname), n = t.req.method || "GET";
+    const e = O(t.url.pathname), n = t.req.method || "GET";
     if (e === "/") {
       let o = this.root.getHandler(n);
       return o || (this.root.wChild && (o = this.root.wChild.node.getHandler(n), o) ? (h) => (h.params = { [this.root.wChild.name]: "" }, o(h)) : null);
@@ -391,7 +391,7 @@ class K {
       const m = l[h];
       if (m === void 0)
         return null;
-      const p = N(m);
+      const p = A(m);
       if (p === null)
         return null;
       if (o.sChildren) {
@@ -415,7 +415,7 @@ class K {
       if (o.wChild) {
         let f = "";
         for (let c = h; c < l.length; c++) {
-          const u = N(l[c]);
+          const u = A(l[c]);
           if (u === null)
             return null;
           f += (c === h ? "" : "/") + u;
@@ -492,7 +492,7 @@ async function B(i, t, e) {
       continue;
     const s = `${i}.${n === "br" ? "br" : "gz"}`;
     try {
-      if ((await y.stat(s)).isFile())
+      if ((await C.stat(s)).isFile())
         return { path: s, encoding: n };
     } catch {
     }
@@ -534,14 +534,14 @@ class X {
       return null;
     const s = this.cfg.index.resolveUrl(t.url);
     return s ? async (r) => {
-      const a = await y.stat(s), o = a.size, h = r.req.method === "HEAD", m = A(s).toLowerCase(), p = this.resolveCT?.(m, s, a, r) ?? this.ct[m] ?? this.defaultCT;
+      const a = await C.stat(s), o = a.size, h = r.req.method === "HEAD", m = j(s).toLowerCase(), p = this.resolveCT?.(m, s, a, r) ?? this.ct[m] ?? this.defaultCT;
       r.header("X-Content-Type-Options", "nosniff"), r.header("Last-Modified", a.mtime.toUTCString()), r.header("Content-Type", L(p, this.defaultTextCharset));
       let f = s, d = a, c = null;
       if (this.pre.enabled) {
         const g = U(r.req.headers["accept-encoding"]);
         this.pre.alwaysSetVary && r.header("Vary", "Accept-Encoding");
         let T = null;
-        this.pre.resolver ? T = await this.pre.resolver(s, r.req.headers["accept-encoding"]) : this.pre.useSiblingFiles && g.size > 0 && (T = await B(s, this.pre.prefer, g)), T && (f = T.path, c = T.encoding, d = await y.stat(f), r.header("Content-Encoding", c));
+        this.pre.resolver ? T = await this.pre.resolver(s, r.req.headers["accept-encoding"]) : this.pre.useSiblingFiles && g.size > 0 && (T = await B(s, this.pre.prefer, g)), T && (f = T.path, c = T.encoding, d = await C.stat(f), r.header("Content-Encoding", c));
       }
       const u = d.size, b = c ? `W/"${u}-${Math.trunc(d.mtimeMs)}-${c}"` : `W/"${o}-${Math.trunc(a.mtimeMs)}"`;
       r.header("ETag", b);
@@ -573,8 +573,8 @@ class X {
         r.res.end();
         return;
       }
-      const C = P(f);
-      C.on("error", () => r.res.destroy()), C.pipe(r.res);
+      const y = P(f);
+      y.on("error", () => r.res.destroy()), y.pipe(r.res);
     } : null;
   }
 }

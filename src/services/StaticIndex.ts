@@ -141,7 +141,7 @@ export class StaticIndex {
                 for (const indexFile of this.indexFiles) {
                     const indexFileFullUrl = basePrefix + rel + '/' + indexFile
                     if (next.has(indexFileFullUrl)) {
-                        next.set(basePrefix + rel, dirAbs)
+                        next.set(basePrefix + rel, next.get(indexFileFullUrl)!)
                         break
                     }
                 }

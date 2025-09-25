@@ -1,6 +1,7 @@
 export interface StaticIndexOptions {
     rootDir: string;
     urlBase: string;
+    indexFiles?: string[];
     scanIntervalMs?: number;
     followSymlinks?: boolean;
     maxFiles?: number;
@@ -17,6 +18,7 @@ export declare class StaticIndex {
     private root;
     private base;
     private timer?;
+    private indexFiles;
     constructor(opts: StaticIndexOptions);
     start(): Promise<void>;
     stop(): void;

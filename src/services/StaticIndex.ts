@@ -5,6 +5,7 @@ import path from 'node:path'
 export interface StaticIndexOptions {
     rootDir: string
     urlBase: string
+    indexFiles?: string[]
     scanIntervalMs?: number
     followSymlinks?: boolean
     maxFiles?: number
@@ -21,11 +22,13 @@ export class StaticIndex {
     private root!: string
     private base!: string
     private timer?: NodeJS.Timeout
+    private indexFiles:  Set<string>
 
     constructor(private opts: StaticIndexOptions) {
         this.root = path.resolve(opts.rootDir)
         // preserve root "/" as a distinct base; otherwise trim trailing slash
         this.base = opts.urlBase === '/' ? '/' : (opts.urlBase.endsWith('/') ? opts.urlBase.slice(0, -1) : opts.urlBase)
+        this.indexFiles = new Set<string>(opts.indexFiles ? opts.indexFiles : ['index.html', 'index.htm'])
     }
 
     async start(): Promise<void> {
@@ -132,6 +135,15 @@ export class StaticIndex {
                 } else if (lst.isFile()) {
                     const urlPath = `${basePrefix}/${childRel.split(path.sep).join('/')}`
                     next.set(urlPath, childAbs)
+                }
+
+                // add index files
+                for (const indexFile of this.indexFiles) {
+                    const indexFileFullUrl = basePrefix + rel + '/' + indexFile
+                    if (next.has(indexFileFullUrl)) {
+                        next.set(basePrefix + rel, dirAbs)
+                        break
+                    }
                 }
                 // other types — ignore
             }

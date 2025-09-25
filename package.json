@@ -1,6 +1,6 @@
 {
   "name": "@sagifire/quiver",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A simple and high-performance library for developing web applications",
   "keywords": [
     "web",
@@ -34,7 +34,9 @@
   },
   "license": "MIT",
   "author": "sagifire <achvyl@gmail.com>",
-  "type": "commonjs",
+  "publishConfig": {
+    "access": "public"
+  },
   "module": "dist/es/index.js",
   "main": "dist/cjs/index.js",
   "types": "dist/index.d.ts",

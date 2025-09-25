@@ -200,8 +200,8 @@ class Z {
     return this.map.get(t);
   }
   resolveUrl(t) {
-    const e = t.pathname;
-    if (!e || !e.startsWith("/") || e.split("/").includes(".."))
+    let e = t.pathname;
+    if (e.endsWith("/") && (e = e.slice(0, -1)), !e || !e.startsWith("/") || e.split("/").includes(".."))
       return;
     if (this.base !== "/") {
       if (!(e === this.base || e.startsWith(this.base + "/")))

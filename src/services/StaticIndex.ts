@@ -164,7 +164,10 @@ export class StaticIndex {
     }
 
     resolveUrl(url: URL): string | undefined {
-        const pathname = url.pathname
+        let pathname = url.pathname
+        if (pathname.endsWith('/')) {
+            pathname = pathname.slice(0, -1)
+        }
 
         // Reject any path that contains ".." segments to avoid traversal even if normalized
         // also reject empty or non-absolute paths
